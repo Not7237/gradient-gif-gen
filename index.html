@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gradient GIF Generator</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f8f9fa;
+      color: #343a40;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+    #gradient-preview {
+      width: 320px;
+      height: 320px;
+      border-radius: 15px;
+      margin: 20px 0;
+      background: linear-gradient(90deg, #000000, #ffffff);
+      background-size: 200% 200%;
+      animation: gradient-animation 2s infinite alternate;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    @keyframes gradient-animation {
+      0% {
+        background-position: 0% 50%;
+      }
+      100% {
+        background-position: 100% 50%;
+      }
+    }
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 320px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    label {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    input[type="color"],
+    input[type="range"],
+    input[type="file"] {
+      width: 100%;
+      height: 40px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      padding: 5px;
+    }
+    input[type="range"] {
+      height: 10px;
+      background: #e9ecef;
+      -webkit-appearance: none;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      background: #007bff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    button {
+      padding: 12px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+    }
+    button:hover {
+      background-color: #0056b3;
+      box-shadow: 0 6px 15px rgba(0, 86, 179, 0.4);
+    }
+    .download-link {
+      margin-top: 15px;
+      font-size: 1rem;
+      color: #007bff;
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+    .download-link:hover {
+      color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gradient GIF Generator</h1>
+  <div id="gradient-preview"></div>
+  <div class="controls">
+    <div class="control-group">
+      <label for="color1">Pick First Color:</label>
+      <input type="color" id="color1" value="#000000" />
+    </div>
+    <div class="control-group">
+      <label for="color2">Pick Second Color:</label>
+      <input type="color" id="color2" value="#ffffff" />
+    </div>
+    <div class="control-group">
+      <label for="angle">Pick Gradient Angle:</label>
+      <input type="range" id="angle" min="0" max="360" value="90" />
+    </div>
+    <div class="control-group">
+      <label for="overlay">Upload Overlay Image (optional):</label>
+      <input type="file" id="overlay" accept="image/*" />
+    </div>
+    <button id="generate">Generate GIF</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/gif.js/dist/gif.min.js"></script>
+  <script>
+    const color1Input = document.getElementById('color1');
+    const color2Input = document.getElementById('color2');
+    const angleInput = document.getElementById('angle');
+    const preview = document.getElementById('gradient-preview');
+    const generateButton = document.getElementById('generate');
+    const overlayInput = document.getElementById('overlay');
+    
+    let overlayImage = null;
+
+    // Update gradient preview with animation
+    function updateGradient() {
+      const color1 = color1Input.value;
+      const color2 = color2Input.value;
+      const angle = angleInput.value;
+      preview.style.background = `linear-gradient(${angle}deg, ${color1}, ${color2})`;
+      preview.style.backgroundSize = '200% 200%';
+      preview.style.animation = 'gradient-animation 2s infinite alternate';
+    }
+
+    color1Input.addEventListener('input', updateGradient);
+    color2Input.addEventListener('input', updateGradient);
+    angleInput.addEventListener('input', updateGradient);
+
+    // Handle overlay image upload
+    overlayInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          overlayImage = new Image();
+          overlayImage.src = event.target.result;
+          overlayImage.onload = function() {
+            console.log('Overlay image loaded');
+          };
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    generateButton.addEventListener('click', () => {
+      const gif = new GIF({
+        workers: 2,
+        quality: 10,
+        width: 320,
+        height: 320
+      });
+
+      const color1 = color1Input.value;
+      const color2 = color2Input.value;
+      const angle = parseInt(angleInput.value);
+
+      // Create frames for the GIF (20 frames for smooth animation)
+      for (let i = 0; i <= 20; i++) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 320;
+        canvas.height = 320;
+        const ctx = canvas.getContext('2d');
+
+        // Create an animated gradient by adjusting the angle for each frame
+        const frameAngle = angle + i * 18; // Variation for animation
+        const gradient = ctx.createLinearGradient(
+          0,
+          0,
+          canvas.width * Math.cos((frameAngle * Math.PI) / 180),
+          canvas.height * Math.sin((frameAngle * Math.PI) / 180)
+        );
+
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(1, color2);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // If an overlay image is uploaded, draw it on top (centered)
+        if (overlayImage) {
+          const iw = overlayImage.width;
+          const ih = overlayImage.height;
+          const x = (canvas.width - iw) / 2;
+          const y = (canvas.height - ih) / 2;
+          ctx.drawImage(overlayImage, x, y);
+        }
+
+        gif.addFrame(canvas, { delay: 100 });
+      }
+
+      gif.on('finished', (blob) => {
+        const url = URL.createObjectURL(blob);
+        // Create an invisible link and trigger a click to download the file automatically
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'gradient.gif';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+
+      gif.render();
+    });
+
+    // Initialize gradient preview
+    updateGradient();
+  </script>
+</body>
+</html>
